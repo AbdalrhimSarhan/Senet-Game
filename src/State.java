@@ -16,9 +16,9 @@ public class State {
     public static final char EMPTY = '.';
 
     // Special squares by number (1..30)
-    public static final int REBIRTH   = 15; // checkpoint
-    public static final int HAPPINESS = 26; // must pass through, no jumping over
-    public static final int WATER     = 27; // go to rebirth
+    public static final int Checkpoint = 15; // checkpoint
+    public static final int Wall = 26; // must pass through, no jumping over
+    public static final int GoToCheckpoint = 27; // go to Checkpoint
 
     // --- S-path mapping ---
     // path[sq-1] = index (0..29) in cells[]
@@ -97,7 +97,7 @@ public class State {
         return computerOut >= 7;
     }
 
-    public List<Move> getLegalMoves(char player, int roll) {
+    public List<Move> getPossibleMoves(char player, int roll) {
         List<Move> moves = new ArrayList<>();
 
         // مساعدة: إذا حجر على 28/29/30، لا يخرج إلا برمية محددة (نسخة مباشرة)
@@ -181,22 +181,22 @@ public class State {
         int toSq = s.squareOfIndex(toIdx);
 
         // 27: House of Water => العودة فوراً إلى 15
-        if (toSq == WATER) {
+        if (toSq == GoToCheckpoint) {
             s.cells[toIdx] = EMPTY;
-            s.placeOnRebirth(player);
+            s.placeOnCheckpoint(player);
         }
 
         return s;
     }
 
     // ضع الحجر على 15، وإذا كانت مشغولة: أول مربع فارغ قبلها (14..1)
-    private void placeOnRebirth(char player) {
-        int rebirthIdx = indexOfSquare(REBIRTH);
+    private void placeOnCheckpoint(char player) {   
+        int rebirthIdx = indexOfSquare(Checkpoint);
         if (cells[rebirthIdx] == EMPTY) {
             cells[rebirthIdx] = player;
             return;
         }
-        for (int sq = REBIRTH - 1; sq >= 1; sq--) {
+        for (int sq = Checkpoint - 1; sq >= 1; sq--) {
             int idx = indexOfSquare(sq);
             if (cells[idx] == EMPTY) {
                 cells[idx] = player;
@@ -216,7 +216,7 @@ public class State {
         int destSq = fromSq + roll;
 
         // لا قفز فوق 26: إذا كنت قبل 26 ووجهتك بعده، لازم تهبط على 26 بالضبط
-        if (fromSq < HAPPINESS && destSq > HAPPINESS && destSq != HAPPINESS) {
+        if (fromSq < Wall && destSq > Wall && destSq != Wall) {
             return -2;
         }
 
@@ -229,7 +229,7 @@ public class State {
 
     // ---------- Special squares helpers ----------
     public boolean isCheckpointSquare(int squareNumber1to30) {
-        return squareNumber1to30 == REBIRTH || squareNumber1to30 >= 26;
+        return squareNumber1to30 == Checkpoint || squareNumber1to30 >= 26;
     }
 
     // ---------- Evaluation (تجهيز للـ AI) ----------
@@ -266,14 +266,14 @@ public class State {
         if (s.hasPieceOnSquare(player, 29) && roll != 2) {
             int fromIdx = s.indexOfSquare(29);
             s.cells[fromIdx] = EMPTY;
-            s.placeOnRebirth(player);
+            s.placeOnCheckpoint(player);
         }
 
         // إذا حجر على 28 ولم تظهر 3 في هذا الدور يرجع إلى 15
         if (s.hasPieceOnSquare(player, 28) && roll != 3) {
             int fromIdx = s.indexOfSquare(28);
             s.cells[fromIdx] = EMPTY;
-            s.placeOnRebirth(player);
+            s.placeOnCheckpoint(player);
         }
 
         return s;
@@ -303,9 +303,9 @@ public class State {
     }
 
     private char symbolForSpecial(int sq) {
-        if (sq == REBIRTH) return 'R';      // 15
-        if (sq == HAPPINESS) return 'S';    // 26
-        if (sq == WATER) return 'W';        // 27
+        if (sq == Checkpoint) return 'R';      // 15
+        if (sq == Wall) return 'S';    // 26
+        if (sq == GoToCheckpoint) return 'W';        // 27
         if (sq == 28) return 'A';
         if (sq == 29) return 'B';
         if (sq == 30) return 'D';
