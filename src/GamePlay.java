@@ -26,7 +26,7 @@ public class GamePlay {
 
             if (turn == 0) {
                 System.out.println("************ USER ************");
-                board = board.applyEndZoneReturnIfNeeded('H', roll);
+                board = board.handleEndZone('H', roll);
                 userTurn(roll);
                 System.out.println(board);
 
@@ -38,7 +38,7 @@ public class GamePlay {
 
             } else {
                 System.out.println("************ COMPUTER ************");
-                board = board.applyEndZoneReturnIfNeeded('C', roll);
+                board = board.handleEndZone('C', roll);
                 computerTurn(roll);
                 System.out.println(board);
 

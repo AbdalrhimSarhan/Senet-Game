@@ -51,7 +51,7 @@ public class State {
     public State() {
         this.cells = new char[N];
         Arrays.fill(this.cells, EMPTY);
-        initDefaultSetup();
+        defaultSetupStart();
     }
 
     private State(char[] cells, int humanOut, int computerOut) {
@@ -64,7 +64,9 @@ public class State {
         return new State(Arrays.copyOf(cells, N), humanOut, computerOut);
     }
 
-    private void initDefaultSetup() {
+    private void defaultSetupStart() {
+        Arrays.fill(cells, EMPTY);
+        // توزيع أول 14 مربع بالتناوب H / C
         for (int sq = 1; sq <= 14; sq++) {
             int idx = indexOfSquare(sq);
             cells[idx] = (sq % 2 == 1) ? HUMAN : COMP;
@@ -119,7 +121,6 @@ public class State {
 
         return moves;
     }
-
 
     // ---------- Applying a move ----------
     public State applyMove(char player, Move move, int roll) {
@@ -230,21 +231,20 @@ public class State {
         return cells[idx] == player;
     }
 
-    // ABOOD
-    public State applyEndZoneReturnIfNeeded(char player, int roll) {
+    public State handleEndZone(char player, int roll) {
         State s = this.copy();
 
-        // إذا حجر على 29 ولم تظهر 2 في هذا الدور (دور نفس اللاعب) يرجع إلى 15
-        if (s.hasPieceOnSquare(player, 29) && roll != 2) {
-            int fromIdx = s.indexOfSquare(29);
-            s.cells[fromIdx] = EMPTY;
+        // 28 → يجب رمية 3
+        if (roll != 3 && s.hasPieceOnSquare(player, 28)) {
+            int idx = s.indexOfSquare(28);
+            s.cells[idx] = EMPTY;
             s.placeOnCheckpoint(player);
         }
 
-        // إذا حجر على 28 ولم تظهر 3 في هذا الدور يرجع إلى 15
-        if (s.hasPieceOnSquare(player, 28) && roll != 3) {
-            int fromIdx = s.indexOfSquare(28);
-            s.cells[fromIdx] = EMPTY;
+        // 29 → يجب رمية 2
+        if (roll != 2 && s.hasPieceOnSquare(player, 29)) {
+            int idx = s.indexOfSquare(29);
+            s.cells[idx] = EMPTY;
             s.placeOnCheckpoint(player);
         }
 
