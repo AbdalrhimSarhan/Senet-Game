@@ -97,52 +97,29 @@ public class State {
         return computerOut >= 7;
     }
 
-    public List<Move> getPossibleMoves(char player, int roll) {
+    public List<Move> getLegalMoves(char player, int roll) {
         List<Move> moves = new ArrayList<>();
 
-        // مساعدة: إذا حجر على 28/29/30، لا يخرج إلا برمية محددة (نسخة مباشرة)
-        // + لا يمكن القفز فوق 26: إذا كنت قبل 26 ووجهتك بعده، لازم تهبط عليه بالضبط.
         for (int fromIdx = 0; fromIdx < N; fromIdx++) {
             if (cells[fromIdx] != player) continue;
 
-            int fromSq = squareOfIndex(fromIdx);
+            int destIdx = computeDestinationIndex(fromIdx, roll);
 
-            if (fromSq == 28) {
-                if (roll == 3) moves.add(new Move(fromIdx, -1));
-                continue;
-            }
-            if (fromSq == 29) {
-                if (roll == 2) moves.add(new Move(fromIdx, -1));
-                continue;
-            }
-            if (fromSq == 30) {
-                // حسب طلبك: أي رمية تخرج الحجر
+            if (destIdx == -2) continue;
+
+            if (destIdx == -1) {
                 moves.add(new Move(fromIdx, -1));
                 continue;
             }
 
-            int toIdx = computeDestinationIndex(fromIdx, roll);
+            if (cells[destIdx] == player) continue;
 
-            // -2 = حركة غير صالحة / خارج النطاق
-            if (toIdx == -2) continue;
-
-            // -1 = خروج (يجب أن يكون بالضبط خارج 30)
-            if (toIdx == -1) {
-                // من غير المربعات 28/29/30: يسمح بالخروج إذا كانت الحركة بالضبط = 31
-                // (يعني من 30 غير وارد هنا لأننا تعاملنا معه فوق)
-                moves.add(new Move(fromIdx, -1));
-                continue;
-            }
-
-            // لا تهبط على حجر لنفس اللاعب
-            if (cells[toIdx] == player) continue;
-
-            // حركة قانونية: إما فراغ أو حجر خصم (swap)
-            moves.add(new Move(fromIdx, toIdx));
+            moves.add(new Move(fromIdx, destIdx));
         }
 
         return moves;
     }
+
 
     // ---------- Applying a move ----------
     public State applyMove(char player, Move move, int roll) {
@@ -206,23 +183,18 @@ public class State {
 
     }
 
-    // ---------- Path / destination ----------
-    // return:
-    //   0..29 destination index
-    //   -1 for EXIT
-    //   -2 invalid move
     public int computeDestinationIndex(int fromIndex, int roll) {
-        int fromSq = squareOfIndex(fromIndex);
+        int fromSq = squareOfIndex(fromIndex);   // 1..30
         int destSq = fromSq + roll;
 
-        // لا قفز فوق 26: إذا كنت قبل 26 ووجهتك بعده، لازم تهبط على 26 بالضبط
-        if (fromSq < Wall && destSq > Wall && destSq != Wall) {
-            return -2;
+
+        if (destSq > 30) {
+            return -1;
         }
 
-        // الخروج يجب أن يكون "بالضبط" بعد 30 (31)
-        if (destSq == 31) return -1;
-        if (!isInsideBoardSquare(destSq)) return -2;
+        if (fromSq < Wall  && destSq > Wall ) {
+            return -2;
+        }
 
         return indexOfSquare(destSq);
     }

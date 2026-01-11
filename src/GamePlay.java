@@ -62,7 +62,7 @@ public class GamePlay {
         }
 
         // (2) حركات عادية
-        List<Move> moves = board.getPossibleMoves('H', roll);
+        List<Move> moves = board.getLegalMoves('H', roll);
 
         if (moves.isEmpty()) {
             System.out.println("No moves are possible. Skip the turn.");
@@ -96,7 +96,7 @@ public class GamePlay {
         }
 
         // (2) لاحقاً: Expectiminimax
-        List<Move> moves = board.getPossibleMoves('C', roll);
+        List<Move> moves = board.getLegalMoves('C', roll);
         if (moves.isEmpty()) {
             System.out.println("Computer: no moves, skip.");
             return;
