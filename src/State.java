@@ -129,11 +129,11 @@ public class State {
         int fromIdx = move.fromIndex;
         char opp = (player == HUMAN) ? COMP : HUMAN;
 
-        // basic safety
+        // حماية بسيطة
         if (fromIdx < 0 || fromIdx >= N) return s;
         if (s.cells[fromIdx] != player) return s;
 
-        // exit
+        // خروج
         if (move.isExit()) {
             s.cells[fromIdx] = EMPTY;
             if (player == HUMAN) s.humanOut++;
@@ -144,25 +144,21 @@ public class State {
         int toIdx = move.toIndex;
         if (toIdx < 0 || toIdx >= N) return s;
 
-        char target = s.cells[toIdx];
-
-        // clear source first
-        s.cells[fromIdx] = EMPTY;
-
-        // move / capture
-        if (target == opp) {
+        // نفذ النقل + swap إذا على الخصم
+        if (s.cells[toIdx] == opp) {
             // swap
             s.cells[toIdx] = player;
             s.cells[fromIdx] = opp;
         } else {
             // normal move
             s.cells[toIdx] = player;
+            s.cells[fromIdx] = EMPTY;
         }
 
-        // apply special square rules
+        // طبق قواعد المربعات الخاصة بعد الهبوط
         int toSq = s.squareOfIndex(toIdx);
 
-        // 27: go back to checkpoint
+        // 27: House of Water => العودة فوراً إلى 15
         if (toSq == GoToCheckpoint) {
             s.cells[toIdx] = EMPTY;
             s.placeOnCheckpoint(player);
@@ -171,18 +167,22 @@ public class State {
         return s;
     }
 
-
     // ضع الحجر على 15، وإذا كانت مشغولة: أول مربع فارغ قبلها (14..1)
     private void placeOnCheckpoint(char player) {
-        for (int sq = Checkpoint; sq >= 1; sq--) {
+        int rebirthIdx = indexOfSquare(Checkpoint);
+        if (cells[rebirthIdx] == EMPTY) {
+            cells[rebirthIdx] = player;
+            return;
+        }
+        for (int sq = Checkpoint - 1; sq >= 1; sq--) {
             int idx = indexOfSquare(sq);
             if (cells[idx] == EMPTY) {
                 cells[idx] = player;
-                break;
+                return;
             }
         }
-    }
 
+    }
 
     public int computeDestinationIndex(int fromIndex, int roll) {
         int fromSq = squareOfIndex(fromIndex);   // 1..30
