@@ -210,7 +210,8 @@ public class State {
         if (win(COMP))  return 10000;
         if (win(HUMAN)) return -10000;
 
-        double score = 0.0;
+        double humanDanger = 0.0;
+        double compDanger  = 0.0;
 
         for (int idx = 0; idx < N; idx++) {
             char p = cells[idx];
@@ -218,46 +219,48 @@ public class State {
 
             int sq = squareOfIndex(idx);
 
-            // Checkpoint squares are SAFE by definition
-            if (isCheckpointSquare(sq)) {
-                if (p == COMP) score += 10;
-                else score -= 10;
-                continue;
-            }
+            // Checkpoints are SAFE
+            if (isCheckpointSquare(sq)) continue;
 
-            double danger = 0.0;
             char enemy = (p == COMP) ? HUMAN : COMP;
+            double danger = 0.0;
 
-            // Look back up to 5 squares
+            // Scan backward up to 5 squares
             for (int k = 1; k <= 5; k++) {
                 int fromSq = sq - k;
                 if (fromSq < 1) break;
 
-                // Wall rule: cannot jump over 26
+                // Wall rule
                 if (fromSq < Wall && sq > Wall) continue;
 
                 int fromIdx = indexOfSquare(fromSq);
                 if (cells[fromIdx] != enemy) continue;
 
-                // This enemy CAN land exactly here with roll k
                 danger += ROLL_PROB[k];
             }
 
-            // Convert danger into score
-            double safetyScore = 1.0 - danger; // higher is safer
-
-            if (p == COMP)
-                score += safetyScore * 30;
+            if (p == HUMAN)
+                humanDanger += danger;
             else
-                score -= safetyScore * 30;
+                compDanger += danger;
         }
 
-        // Exits still matter (but less than survival)
-        score += computerOut * 50;
-        score -= humanOut * 50;
+        double score = 0.0;
+
+        // MAIN OBJECTIVE: punish unsafe human pieces
+        score += humanDanger * 120;
+
+        // SECONDARY: protect own pieces
+        score -= compDanger * 60;
+
+        // TERTIARY: exits (still important, but not dominant)
+        score += computerOut * 40;
+        score -= humanOut * 60;
 
         return score;
     }
+
+
 
 
     public boolean hasPieceOnSquare(char player, int square1to30) {
