@@ -205,10 +205,10 @@ public class State {
         return squareNumber1to30 == Checkpoint || squareNumber1to30 >= 26;
     }
 
-    // ---------- Evaluation (تجهيز للـ AI) ----------
-    // Heuristic بسيط: تقدّم الكمبيوتر - تقدّم الإنسان
-    // (كلما كان رقم المربع أكبر كان أفضل) + مكافأة كبيرة للخروج.
     public double evaluate() {
+        if (win(COMP))  return 10000;
+        if (win(HUMAN)) return -10000;
+
         double score = 0.0;
 
         for (int idx = 0; idx < N; idx++) {
@@ -216,15 +216,29 @@ public class State {
             if (p == EMPTY) continue;
 
             int sq = squareOfIndex(idx);
-            if (p == COMP) score += sq;
-            else score -= sq;
+
+            double pieceScore = sq * 2.0; // progress matters
+
+            // safety bonus
+            if (isCheckpointSquare(sq)) pieceScore += 5;
+
+            // danger: before wall and close to enemy
+            if (sq < Wall) pieceScore -= 2;
+
+            if (p == COMP) score += pieceScore;
+            else score -= pieceScore;
         }
 
-        score += computerOut * 40.0;
-        score -= humanOut * 40.0;
+        // exiting is KING in Senet
+        score += computerOut * 80;
+        score -= humanOut * 80;
+
+        // tempo bonus
+        score += (computerOut - humanOut) * 10;
 
         return score;
     }
+
 
     public boolean hasPieceOnSquare(char player, int square1to30) {
         int idx = indexOfSquare(square1to30);
