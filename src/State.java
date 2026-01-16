@@ -206,6 +206,7 @@ public class State {
     }
 
     public double evaluate() {
+
         if (win(COMP))  return 10000;
         if (win(HUMAN)) return -10000;
 
@@ -217,24 +218,43 @@ public class State {
 
             int sq = squareOfIndex(idx);
 
-            double pieceScore = sq * 2.0; // progress matters
+            // Checkpoint squares are SAFE by definition
+            if (isCheckpointSquare(sq)) {
+                if (p == COMP) score += 10;
+                else score -= 10;
+                continue;
+            }
 
-            // safety bonus
-            if (isCheckpointSquare(sq)) pieceScore += 5;
+            double danger = 0.0;
+            char enemy = (p == COMP) ? HUMAN : COMP;
 
-            // danger: before wall and close to enemy
-            if (sq < Wall) pieceScore -= 2;
+            // Look back up to 5 squares
+            for (int k = 1; k <= 5; k++) {
+                int fromSq = sq - k;
+                if (fromSq < 1) break;
 
-            if (p == COMP) score += pieceScore;
-            else score -= pieceScore;
+                // Wall rule: cannot jump over 26
+                if (fromSq < Wall && sq > Wall) continue;
+
+                int fromIdx = indexOfSquare(fromSq);
+                if (cells[fromIdx] != enemy) continue;
+
+                // This enemy CAN land exactly here with roll k
+                danger += ROLL_PROB[k];
+            }
+
+            // Convert danger into score
+            double safetyScore = 1.0 - danger; // higher is safer
+
+            if (p == COMP)
+                score += safetyScore * 30;
+            else
+                score -= safetyScore * 30;
         }
 
-        // exiting is KING in Senet
-        score += computerOut * 80;
-        score -= humanOut * 80;
-
-        // tempo bonus
-        score += (computerOut - humanOut) * 10;
+        // Exits still matter (but less than survival)
+        score += computerOut * 50;
+        score -= humanOut * 50;
 
         return score;
     }
@@ -297,4 +317,14 @@ public class State {
         if (sq == 30) return 'D';
         return '?';
     }
+
+    private static final double[] ROLL_PROB = {
+            0.0,
+            4.0 / 16.0,
+            6.0 / 16.0,
+            4.0 / 16.0,
+            1.0 / 16.0,
+            1.0 / 16.0
+    };
+
 }
