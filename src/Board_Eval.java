@@ -10,4 +10,5 @@ public class Board_Eval {
     public State getBoard() {
         return Board;
     }
+    public double getEval() { return eval; }
 }

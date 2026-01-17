@@ -5,25 +5,21 @@ import java.util.List;
 public class State {
     public static final int N = 30;
 
-    // Occupancy only (row-major 3x10)
     private final char[] cells;
 
     private int humanOut;
     private int computerOut;
 
     public static final char HUMAN = 'H';
-    public static final char COMP  = 'C';
+    public static final char COMP = 'C';
     public static final char EMPTY = '.';
 
-    // Special squares by number (1..30)
-    public static final int Checkpoint = 15; // checkpoint
-    public static final int Wall = 26; // must pass through, no jumping over
-    public static final int GoToCheckpoint = 27; // go to Checkpoint
+    public static final int Checkpoint = 15;
+    public static final int Wall = 26;
+    public static final int GoToCheckpoint = 27;
 
-    // --- S-path mapping ---
-    // path[sq-1] = index (0..29) in cells[]
     private static final int[] PATH = buildPath();
-    // squareOfIndex[idx] = sq (1..30)
+
     private static final int[] SQUARE_OF_INDEX = buildSquareOfIndex();
 
     private static int[] buildPath() {
@@ -66,7 +62,7 @@ public class State {
 
     private void defaultSetupStart() {
         Arrays.fill(cells, EMPTY);
-        // توزيع أول 14 مربع بالتناوب H / C
+
         for (int sq = 1; sq <= 14; sq++) {
             int idx = indexOfSquare(sq);
             cells[idx] = (sq % 2 == 1) ? HUMAN : COMP;
@@ -76,7 +72,7 @@ public class State {
     }
 
     private int squareOfIndex(int idx) {
-        return SQUARE_OF_INDEX[idx]; // 1..30
+        return SQUARE_OF_INDEX[idx];
     }
 
     private int indexOfSquare(int sq) {
@@ -88,7 +84,9 @@ public class State {
     }
 
 
-    public char at(int index) { return cells[index]; }
+    public char at(int index) {
+        return cells[index];
+    }
 
     public boolean isTerminal() {
         return humanOut >= 7 || computerOut >= 7;
@@ -122,18 +120,15 @@ public class State {
         return moves;
     }
 
-    // ---------- Applying a move ----------
     public State applyMove(char player, Move move, int roll) {
         State s = this.copy();
 
         int fromIdx = move.fromIndex;
         char opp = (player == HUMAN) ? COMP : HUMAN;
 
-        // basic safety
         if (fromIdx < 0 || fromIdx >= N) return s;
         if (s.cells[fromIdx] != player) return s;
 
-        // exit
         if (move.isExit()) {
             s.cells[fromIdx] = EMPTY;
             if (player == HUMAN) s.humanOut++;
@@ -146,23 +141,17 @@ public class State {
 
         char target = s.cells[toIdx];
 
-        // clear source first
         s.cells[fromIdx] = EMPTY;
 
-        // move / capture
         if (target == opp) {
-            // swap
             s.cells[toIdx] = player;
             s.cells[fromIdx] = opp;
         } else {
-            // normal move
             s.cells[toIdx] = player;
         }
 
-        // apply special square rules
         int toSq = s.squareOfIndex(toIdx);
 
-        // 27: go back to checkpoint
         if (toSq == GoToCheckpoint) {
             s.cells[toIdx] = EMPTY;
             s.placeOnCheckpoint(player);
@@ -172,7 +161,6 @@ public class State {
     }
 
 
-    // ضع الحجر على 15، وإذا كانت مشغولة: أول مربع فارغ قبلها (14..1)
     private void placeOnCheckpoint(char player) {
         for (int sq = Checkpoint; sq >= 1; sq--) {
             int idx = indexOfSquare(sq);
@@ -193,22 +181,26 @@ public class State {
             return -1;
         }
 
-        if (fromSq < Wall  && destSq > Wall ) {
+        if (fromSq < Wall && destSq > Wall) {
             return -2;
         }
 
         return indexOfSquare(destSq);
     }
 
-    // ---------- Special squares helpers ----------
     public boolean isCheckpointSquare(int squareNumber1to30) {
         return squareNumber1to30 == Checkpoint || squareNumber1to30 >= 26;
     }
 
-    // ---------- Evaluation (تجهيز للـ AI) ----------
-    // Heuristic بسيط: تقدّم الكمبيوتر - تقدّم الإنسان
-    // (كلما كان رقم المربع أكبر كان أفضل) + مكافأة كبيرة للخروج.
+
     public double evaluate() {
+
+        if (win(COMP))  return 10000;
+        if (win(HUMAN)) return -10000;
+        // فيكم تعتبروا هي تثقيلة يعني معيارنا 20% للتقدم و 80% للأمان والمحافظة على امان القطع
+         double W_SAFETY   = 0.70;
+         double W_PROGRESS = 0.30;
+
         double score = 0.0;
 
         for (int idx = 0; idx < N; idx++) {
@@ -216,15 +208,39 @@ public class State {
             if (p == EMPTY) continue;
 
             int sq = squareOfIndex(idx);
-            if (p == COMP) score += sq;
-            else score -= sq;
+
+            double danger = 0.0;
+            char enemy = (p == COMP) ? HUMAN : COMP;
+
+            for (int k = 1; k <= 5; k++) {
+                int fromSq = sq - k;
+                if (fromSq < 1) break;
+
+                if (fromSq < Wall && sq > Wall) continue;
+
+                int fromIdx = indexOfSquare(fromSq);
+                if (cells[fromIdx] == enemy) {
+                    danger += ROLL_PROB[k];
+                }
+            }
+
+            if (danger > 1.0) danger = 1.0;
+            double safety = 1.0 - danger;
+
+            double pieceBase = safety * 30.0;
+            double bonus = specialBonus(sq);
+
+            if (p == COMP) score += (pieceBase + bonus);
+            else score -= (pieceBase + bonus);
         }
 
-        score += computerOut * 40.0;
-        score -= humanOut * 40.0;
+        score += computerOut * 50;
+        score -= humanOut * 50;
 
         return score;
     }
+
+
 
     public boolean hasPieceOnSquare(char player, int square1to30) {
         int idx = indexOfSquare(square1to30);
@@ -234,14 +250,12 @@ public class State {
     public State handleEndZone(char player, int roll) {
         State s = this.copy();
 
-        // 28 → يجب رمية 3
         if (roll != 3 && s.hasPieceOnSquare(player, 28)) {
             int idx = s.indexOfSquare(28);
             s.cells[idx] = EMPTY;
             s.placeOnCheckpoint(player);
         }
 
-        // 29 → يجب رمية 2
         if (roll != 2 && s.hasPieceOnSquare(player, 29)) {
             int idx = s.indexOfSquare(29);
             s.cells[idx] = EMPTY;
@@ -251,10 +265,8 @@ public class State {
         return s;
     }
 
-    // ---------- Printing ----------
     @Override
     public String toString() {
-        // طباعة 3 صفوف × 10 أعمدة، مع تمييز checkpoints أثناء العرض فقط
         StringBuilder sb = new StringBuilder();
         for (int r = 0; r < 3; r++) {
             for (int c = 0; c < 10; c++) {
@@ -283,4 +295,26 @@ public class State {
         if (sq == 30) return 'D';
         return '?';
     }
+
+    private static final double[] ROLL_PROB = {
+            0.0,
+            4.0 / 16.0,
+            6.0 / 16.0,
+            4.0 / 16.0,
+            1.0 / 16.0,
+            1.0 / 16.0
+    };
+
+    public double specialBonus(int sq) {
+
+        switch (sq) {
+            case 26: return 6 + 4;
+            case 27: return -20;
+            case 28: return 12;
+            case 29: return 14;
+            case 30: return 25;
+            default: return 0;
+        }
+    }
+
 }
