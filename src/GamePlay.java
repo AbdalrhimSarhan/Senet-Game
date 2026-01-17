@@ -63,6 +63,10 @@ public class GamePlay {
         }
 
         List<Move> moves = board.getLegalMoves('H', roll);
+        moves.sort((a, b) -> Integer.compare(
+                a.fromIndex + 1 >= 11 && a.fromIndex + 1 <= 20 ? 31 - (a.fromIndex + 1) : (a.fromIndex + 1),
+                b.fromIndex + 1 >= 11 && b.fromIndex + 1 <= 20 ? 31 - (b.fromIndex + 1) : (b.fromIndex + 1)
+        ));
 
         if (moves.isEmpty()) {
             System.out.println("No moves are possible. Skip the turn.");
