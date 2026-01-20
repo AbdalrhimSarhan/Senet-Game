@@ -12,44 +12,99 @@ public class GamePlay {
     // 0 = Human, 1 = Computer
     private int turn = 0;
 
+    // for comp vs comp
+    private int gameMode = 1;
     // for later AI
     private int depthLimit = 4;
     private long nodesVisited = 0;
     private long nodesEvaluated = 0;
 
+//    public void playGame() {
+//        System.out.println(board);
+//        int count = 2;
+//        while (true) {
+//            int roll = rollSticks();
+//
+//            if (turn == 0) {
+//                System.out.println("************ USER ************");
+//                System.out.println("Roll = " + roll);
+//                board = board.handleEndZone('H', roll);
+//                userTurn(roll);
+//                System.out.println(board);
+//
+//                if (board.win('H')) {
+//                    System.out.println("User Wins");
+//                    break;
+//                }
+//                turn = 1;
+//
+//            } else {
+//                System.out.println("************ COMPUTER ************");
+//                System.out.println("Roll = " + roll);
+//                board = board.handleEndZone('C', roll);
+//                computerTurn(roll);
+//                System.out.println(board);
+//
+//                if (board.win('C')) {
+//                    System.out.println("Computer Wins");
+//                    break;
+//                }
+//                turn = 0;
+//            }
+//            count--;
+//        }
+//    }
+
     public void playGame() {
+
+        System.out.println("Choose Game Mode:");
+        System.out.println("1) Human vs Computer");
+        System.out.println("2) Computer vs Computer");
+        System.out.print("Your choice: ");
+
+        gameMode = in.nextInt();
+
         System.out.println(board);
-        int count = 2;
+
         while (true) {
             int roll = rollSticks();
 
             if (turn == 0) {
-                System.out.println("************ USER ************");
+                System.out.println("************ PLAYER H ************");
                 System.out.println("Roll = " + roll);
+
                 board = board.handleEndZone('H', roll);
-                userTurn(roll);
+
+                if (gameMode == 1) {
+                    userTurn(roll);
+                } else {
+                    computerHuman(roll);
+                }
+
                 System.out.println(board);
 
                 if (board.win('H')) {
-                    System.out.println("User Wins");
+                    System.out.println("H Wins");
                     break;
                 }
+
                 turn = 1;
 
             } else {
-                System.out.println("************ COMPUTER ************");
+                System.out.println("************ PLAYER C ************");
                 System.out.println("Roll = " + roll);
+
                 board = board.handleEndZone('C', roll);
                 computerTurn(roll);
                 System.out.println(board);
 
                 if (board.win('C')) {
-                    System.out.println("Computer Wins");
+                    System.out.println("C Wins");
                     break;
                 }
+
                 turn = 0;
             }
-            count--;
         }
     }
 
@@ -107,6 +162,7 @@ public class GamePlay {
         System.out.println("AI nodes evaluated: " + nodesEvaluated);
         System.out.println("Best Evaluate Chose :" + best.eval);
     }
+
     public void computerHuman(int roll) {
 
         if (board.hasPieceOnSquare('H', 30)) {
@@ -127,7 +183,6 @@ public class GamePlay {
     }
 
 
-
     private int getIndexOfSquare(int sq) {
 
         if (sq >= 1 && sq <= 10) return sq - 1;
@@ -139,8 +194,8 @@ public class GamePlay {
 
     private int rollSticks() {
         int r = rng.nextInt(16); // 0..15
-        if (r <= 3)  return 1;   // 4/16
-        if (r <= 9)  return 2;   // 6/16
+        if (r <= 3) return 1;   // 4/16
+        if (r <= 9) return 2;   // 6/16
         if (r <= 13) return 3;   // 4/16
         if (r == 14) return 4;   // 1/16
         return 5;                // 1/16
