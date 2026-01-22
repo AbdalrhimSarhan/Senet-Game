@@ -12,41 +12,97 @@ public class GamePlay {
     // 0 = Human, 1 = Computer
     private int turn = 0;
 
+    // for comp vs comp
+    private int gameMode = 1;
     // for later AI
     private int depthLimit = 4;
     private long nodesVisited = 0;
     private long nodesEvaluated = 0;
 
+//    public void playGame() {
+//        System.out.println(board);
+//        int count = 2;
+//        while (true) {
+//            int roll = rollSticks();
+//
+//            if (turn == 0) {
+//                System.out.println("************ USER ************");
+//                System.out.println("Roll = " + roll);
+//                board = board.handleEndZone('H', roll);
+//                userTurn(roll);
+//                System.out.println(board);
+//
+//                if (board.win('H')) {
+//                    System.out.println("User Wins");
+//                    break;
+//                }
+//                turn = 1;
+//
+//            } else {
+//                System.out.println("************ COMPUTER ************");
+//                System.out.println("Roll = " + roll);
+//                board = board.handleEndZone('C', roll);
+//                computerTurn(roll);
+//                System.out.println(board);
+//
+//                if (board.win('C')) {
+//                    System.out.println("Computer Wins");
+//                    break;
+//                }
+//                turn = 0;
+//            }
+//            count--;
+//        }
+//    }
+
     public void playGame() {
+
+        System.out.println("Choose Game Mode:");
+        System.out.println("1) Human vs Computer");
+        System.out.println("2) Computer vs Computer");
+        System.out.print("Your choice: ");
+
+        gameMode = in.nextInt();
+
         System.out.println(board);
         int count = 2;
         while (true) {
             int roll = rollSticks();
 
             if (turn == 0) {
-                System.out.println("************ USER ************");
+                System.out.println("************ PLAYER H ************");
                 System.out.println("Roll = " + roll);
+
                 board = board.handleEndZone('H', roll);
-                computerHuman(roll);
+
+                if (gameMode == 1) {
+                    userTurn(roll);
+                } else {
+                    computerHuman(roll);
+                }
+
                 System.out.println(board);
 
                 if (board.win('H')) {
-                    System.out.println("User Wins");
+                    System.out.println("H Wins");
                     break;
                 }
+
                 turn = 1;
 
             } else {
-                System.out.println("************ COMPUTER ************");
+                System.out.println("************ PLAYER C ************");
                 System.out.println("Roll = " + roll);
+
                 board = board.handleEndZone('C', roll);
                 computerTurn(roll);
                 System.out.println(board);
 
                 if (board.win('C')) {
-                    System.out.println("Computer Wins");
+                    System.out.println("C Wins");
                     break;
                 }
+
                 turn = 0;
             }
             count--;
@@ -210,7 +266,6 @@ public class GamePlay {
                 bestVal = val;
                 bestState = next;
             }
-
             if (bestVal < beta) beta = bestVal;
 
             if (alpha >= beta) {
@@ -218,8 +273,9 @@ public class GamePlay {
             }
         }
 
-        return new Board_Eval(bestState, bestVal);
+            return new Board_Eval(bestState, bestVal);
     }
+
 
     public Board_Eval chanceMove(State s, int depth, char playerToMove, double alpha, double beta) {
         nodesVisited++;
