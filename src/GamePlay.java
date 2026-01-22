@@ -18,6 +18,8 @@ public class GamePlay {
     private int depthLimit = 4;
     private long nodesVisited = 0;
     private long nodesEvaluated = 0;
+    private long nodesGenerated = 0;
+
 
 //    public void playGame() {
 //        System.out.println(board);
@@ -154,14 +156,16 @@ public class GamePlay {
         }
 
         nodesVisited = 0;
+        nodesGenerated = 0;
         nodesEvaluated = 0;
 
         Board_Eval best = maxMove(board, depthLimit, roll,
                 Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
         board = best.getBoard();
 
-        System.out.println("AI nodes visited: " + nodesVisited);
-        System.out.println("AI nodes evaluated: " + nodesEvaluated);
+        System.out.println("AI nodes visited   : " + nodesVisited);
+        System.out.println("AI nodes generated : " + nodesGenerated);
+        System.out.println("AI nodes evaluated : " + nodesEvaluated);
         System.out.println("Best Evaluate Chose :" + best.eval);
     }
 
@@ -174,14 +178,16 @@ public class GamePlay {
         }
 
         nodesVisited = 0;
+        nodesGenerated = 0;
         nodesEvaluated = 0;
 
         Board_Eval best = minMove(board, depthLimit, roll,
                 Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
         board = best.getBoard();
 
-        System.out.println("AI nodes visited: " + nodesVisited);
-        System.out.println("AI nodes evaluated: " + nodesEvaluated);
+        System.out.println("AI nodes visited   : " + nodesVisited);
+        System.out.println("AI nodes generated : " + nodesGenerated);
+        System.out.println("AI nodes evaluated : " + nodesEvaluated);
         System.out.println("Best Evaluate Chose :" + best.eval);
     }
 
@@ -198,6 +204,7 @@ public class GamePlay {
         if (current.hasPieceOnSquare('C', 30)) {
             int fromIdx = getIndexOfSquare(30);
             State next = current.applyMove('C', new Move(fromIdx, -1), roll);
+            nodesGenerated++;
             return chanceMove(next, depth - 1, 'H', alpha, beta);
         }
 
@@ -212,6 +219,7 @@ public class GamePlay {
 
         for (Move m : moves) {
             State next = current.applyMove('C', m, roll);
+            nodesGenerated++;
 
             Board_Eval child = chanceMove(next, depth - 1, 'H', alpha, beta);
             double val = child.getEval();
@@ -244,6 +252,7 @@ public class GamePlay {
         if (current.hasPieceOnSquare('H', 30)) {
             int fromIdx = getIndexOfSquare(30);
             State next = current.applyMove('H', new Move(fromIdx, -1), roll);
+            nodesGenerated++;
             return chanceMove(next, depth - 1, 'C', alpha, beta);
         }
 
@@ -258,6 +267,7 @@ public class GamePlay {
 
         for (Move m : moves) {
             State next = current.applyMove('H', m, roll);
+            nodesGenerated++;
 
             Board_Eval child = chanceMove(next, depth - 1, 'C', alpha, beta);
             double val = child.getEval();

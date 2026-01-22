@@ -197,17 +197,22 @@ public class State {
 
         if (win(COMP))  return 10000;
         if (win(HUMAN)) return -10000;
-        // فيكم تعتبروا هي تثقيلة يعني معيارنا 20% للتقدم و 80% للأمان والمحافظة على امان القطع
-         double W_SAFETY   = 0.70;
-         double W_PROGRESS = 0.30;
 
-        double score = 0.0;
+        double W_SAFETY   = 0.70;
+        double W_PROGRESS = 0.30;
+
+        double safetyDiff = 0.0;   // (Safety of C) - (Safety of H)
+        double sumSqC = 0.0;
+        double sumSqH = 0.0;
 
         for (int idx = 0; idx < N; idx++) {
             char p = cells[idx];
             if (p == EMPTY) continue;
 
             int sq = squareOfIndex(idx);
+
+            if (p == COMP) sumSqC += sq;
+            else          sumSqH += sq;
 
             double danger = 0.0;
             char enemy = (p == COMP) ? HUMAN : COMP;
@@ -225,20 +230,27 @@ public class State {
             }
 
             if (danger > 1.0) danger = 1.0;
-            double safety = 1.0 - danger;
+            double safety01 = 1.0 - danger;      // 0..1
+            double safetyScore = safety01 * 30.0;
 
-            double pieceBase = safety * 30.0;
-            double bonus = specialBonus(sq);
+            double safetyValue = safetyScore + specialBonus(sq);
 
-            if (p == COMP) score += (pieceBase + bonus);
-            else score -= (pieceBase + bonus);
+            if (p == COMP) safetyDiff += safetyValue;
+            else          safetyDiff -= safetyValue;
         }
 
-        score += computerOut * 50;
-        score -= humanOut * 50;
 
-        return score;
+        double progressRaw = (sumSqC + 30.0 * computerOut) - (sumSqH + 30.0 * humanOut);
+
+        double MAX_PROGRESS_DIFF = 7.0 * (29.0 + 30.0); // 413
+        double progressNorm = progressRaw / MAX_PROGRESS_DIFF; // roughly [-1..+1]
+
+        double progressScaled = progressNorm * 30.0;
+        double OUT_WEIGHT = 50.0;
+        double outDiff = (computerOut - humanOut) * OUT_WEIGHT;
+        return (W_SAFETY * safetyDiff) + (W_PROGRESS * (progressScaled + outDiff));
     }
+
 
 
 
