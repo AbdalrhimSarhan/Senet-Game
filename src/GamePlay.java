@@ -27,7 +27,7 @@ public class GamePlay {
                 System.out.println("************ USER ************");
                 System.out.println("Roll = " + roll);
                 board = board.handleEndZone('H', roll);
-                userTurn(roll);
+                computerHuman(roll);
                 System.out.println(board);
 
                 if (board.win('H')) {
@@ -100,13 +100,15 @@ public class GamePlay {
         nodesVisited = 0;
         nodesEvaluated = 0;
 
-        Board_Eval best = maxMove(board, depthLimit, roll);
+        Board_Eval best = maxMove(board, depthLimit, roll,
+                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
         board = best.getBoard();
 
         System.out.println("AI nodes visited: " + nodesVisited);
         System.out.println("AI nodes evaluated: " + nodesEvaluated);
         System.out.println("Best Evaluate Chose :" + best.eval);
     }
+
     public void computerHuman(int roll) {
 
         if (board.hasPieceOnSquare('H', 30)) {
@@ -118,12 +120,136 @@ public class GamePlay {
         nodesVisited = 0;
         nodesEvaluated = 0;
 
-        Board_Eval best = minMove(board, depthLimit, roll);
+        Board_Eval best = minMove(board, depthLimit, roll,
+                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
         board = best.getBoard();
 
         System.out.println("AI nodes visited: " + nodesVisited);
         System.out.println("AI nodes evaluated: " + nodesEvaluated);
         System.out.println("Best Evaluate Chose :" + best.eval);
+    }
+
+    public Board_Eval maxMove(State s, int depth, int roll, double alpha, double beta) {
+        nodesVisited++;
+
+        if (depth <= 0 || s.isTerminal()) {
+            nodesEvaluated++;
+            return new Board_Eval(s, s.evaluate());
+        }
+
+        State current = s.handleEndZone('C', roll);
+
+        if (current.hasPieceOnSquare('C', 30)) {
+            int fromIdx = getIndexOfSquare(30);
+            State next = current.applyMove('C', new Move(fromIdx, -1), roll);
+            return chanceMove(next, depth - 1, 'H', alpha, beta);
+        }
+
+        List<Move> moves = current.getLegalMoves('C', roll);
+
+        if (moves.isEmpty()) {
+            return chanceMove(current, depth - 1, 'H', alpha, beta);
+        }
+
+        State bestState = current;
+        double bestVal = Double.NEGATIVE_INFINITY;
+
+        for (Move m : moves) {
+            State next = current.applyMove('C', m, roll);
+
+            Board_Eval child = chanceMove(next, depth - 1, 'H', alpha, beta);
+            double val = child.getEval();
+
+            if (val > bestVal) {
+                bestVal = val;
+                bestState = next;
+            }
+
+            if (bestVal > alpha) alpha = bestVal;
+
+            if (alpha >= beta) {
+                break;
+            }
+        }
+
+        return new Board_Eval(bestState, bestVal);
+    }
+
+    public Board_Eval minMove(State s, int depth, int roll, double alpha, double beta) {
+        nodesVisited++;
+
+        if (depth <= 0 || s.isTerminal()) {
+            nodesEvaluated++;
+            return new Board_Eval(s, s.evaluate());
+        }
+
+        State current = s.handleEndZone('H', roll);
+
+        if (current.hasPieceOnSquare('H', 30)) {
+            int fromIdx = getIndexOfSquare(30);
+            State next = current.applyMove('H', new Move(fromIdx, -1), roll);
+            return chanceMove(next, depth - 1, 'C', alpha, beta);
+        }
+
+        List<Move> moves = current.getLegalMoves('H', roll);
+
+        if (moves.isEmpty()) {
+            return chanceMove(current, depth - 1, 'C', alpha, beta);
+        }
+
+        State bestState = current;
+        double bestVal = Double.POSITIVE_INFINITY;
+
+        for (Move m : moves) {
+            State next = current.applyMove('H', m, roll);
+
+            Board_Eval child = chanceMove(next, depth - 1, 'C', alpha, beta);
+            double val = child.getEval();
+
+            if (val < bestVal) {
+                bestVal = val;
+                bestState = next;
+            }
+
+            if (bestVal < beta) beta = bestVal;
+
+            if (alpha >= beta) {
+                break;
+            }
+        }
+
+        return new Board_Eval(bestState, bestVal);
+    }
+
+    public Board_Eval chanceMove(State s, int depth, char playerToMove, double alpha, double beta) {
+        nodesVisited++;
+
+        if (depth <= 0 || s.isTerminal()) {
+            nodesEvaluated++;
+            return new Board_Eval(s, s.evaluate());
+        }
+
+        double expected = 0.0;
+
+        for (int roll = 1; roll <= 5; roll++) {
+            double p;
+            if (roll == 1) p = 4.0 / 16.0;
+            else if (roll == 2) p = 6.0 / 16.0;
+            else if (roll == 3) p = 4.0 / 16.0;
+            else if (roll == 4) p = 1.0 / 16.0;
+            else p = 1.0 / 16.0;
+
+            Board_Eval res;
+            if (playerToMove == 'C') {
+                res = maxMove(s, depth, roll, alpha, beta);
+            } else {
+                res = minMove(s, depth, roll, alpha, beta);
+            }
+
+            expected += p * res.getEval();
+        }
+
+        return new Board_Eval(s, expected);
     }
 
 
@@ -144,129 +270,6 @@ public class GamePlay {
         if (r <= 13) return 3;   // 4/16
         if (r == 14) return 4;   // 1/16
         return 5;                // 1/16
-    }
-
-    public Board_Eval maxMove(State s, int depth, int roll) {
-        nodesVisited++;
-
-        if (depth <= 0 || s.isTerminal()) {
-            nodesEvaluated++;
-            return new Board_Eval(s, s.evaluate());
-        }
-
-        State current = s.handleEndZone('C', roll);
-
-        if (current.hasPieceOnSquare('C', 30)) {
-            int fromIdx = getIndexOfSquare(30);
-            State next = current.applyMove('C', new Move(fromIdx, -1), roll);
-
-            return chanceMove(next, depth - 1, 'H');
-        }
-
-        List<Move> moves = current.getLegalMoves('C', roll);
-
-        if (moves.isEmpty()) {
-            return chanceMove(current, depth - 1, 'H');
-        }
-
-        Board_Eval best = null;
-        double bestVal = Double.NEGATIVE_INFINITY;
-
-        for (Move m : moves) {
-            State next = current.applyMove('C', m, roll);
-
-            Board_Eval child = chanceMove(next, depth - 1, 'H');
-
-            double val = child.getEval();
-            if (val > bestVal) {
-                bestVal = val;
-                best = new Board_Eval(next, val);
-//                System.out.println("eval = " + best.eval);
-            }
-        }
-
-        if (best == null) {
-            nodesEvaluated++;
-            return new Board_Eval(current, current.evaluate());
-        }
-        return best;
-    }
-
-    public Board_Eval minMove(State s, int depth, int roll) {
-        nodesVisited++;
-
-        if (depth <= 0 || s.isTerminal()) {
-            nodesEvaluated++;
-            return new Board_Eval(s, s.evaluate());
-        }
-
-        State current = s.handleEndZone('H', roll);
-
-        if (current.hasPieceOnSquare('H', 30)) {
-            int fromIdx = getIndexOfSquare(30);
-            State next = current.applyMove('H', new Move(fromIdx, -1), roll);
-
-            return chanceMove(next, depth - 1, 'C');
-        }
-
-        List<Move> moves = current.getLegalMoves('H', roll);
-
-        if (moves.isEmpty()) {
-            return chanceMove(current, depth - 1, 'C');
-        }
-
-        Board_Eval best = null;
-        double bestVal = Double.POSITIVE_INFINITY;
-
-        for (Move m : moves) {
-            State next = current.applyMove('H', m, roll);
-
-            Board_Eval child = chanceMove(next, depth - 1, 'C');
-
-            double val = child.getEval();
-            if (val < bestVal) {
-                bestVal = val;
-                best = new Board_Eval(next, val);
-//                System.out.println("eval = " + best.eval);
-            }
-        }
-
-        if (best == null) {
-            nodesEvaluated++;
-            return new Board_Eval(current, current.evaluate());
-        }
-        return best;
-    }
-
-    public Board_Eval chanceMove(State s, int depth, char playerToMove) {
-        nodesVisited++;
-
-        if (depth <= 0 || s.isTerminal()) {
-            nodesEvaluated++;
-            return new Board_Eval(s, s.evaluate());
-        }
-
-        double expected = 0.0;
-
-        for (int roll = 1; roll <= 5; roll++) {
-            double p;
-            if (roll == 1) p = 4.0 / 16.0;
-            else if (roll == 2) p = 6.0 / 16.0;
-            else if (roll == 3) p = 4.0 / 16.0;
-            else if (roll == 4) p = 1.0 / 16.0;
-            else p = 1.0 / 16.0;
-
-            Board_Eval res;
-            if (playerToMove == 'C') {
-                res = maxMove(s, depth, roll);
-            } else {
-                res = minMove(s, depth, roll);
-            }
-
-            expected += p * res.getEval();
-        }
-
-        return new Board_Eval(s, expected);
     }
 
 
