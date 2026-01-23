@@ -240,15 +240,13 @@ public class State {
         }
 
 
+        safetyDiff += computerOut * 50;
+        safetyDiff -= humanOut * 50;
+
         double progressRaw = (sumSqC + 30.0 * computerOut) - (sumSqH + 30.0 * humanOut);
 
-        double MAX_PROGRESS_DIFF = 7.0 * (29.0 + 30.0); // 413
-        double progressNorm = progressRaw / MAX_PROGRESS_DIFF; // roughly [-1..+1]
+        return (W_SAFETY * safetyDiff) + (W_PROGRESS * progressRaw);
 
-        double progressScaled = progressNorm * 30.0;
-        double OUT_WEIGHT = 50.0;
-        double outDiff = (computerOut - humanOut) * OUT_WEIGHT;
-        return (W_SAFETY * safetyDiff) + (W_PROGRESS * (progressScaled + outDiff));
     }
 
 
@@ -328,5 +326,14 @@ public class State {
             default: return 0;
         }
     }
+
+//        double progressRaw = (sumSqC + 30.0 * computerOut) - (sumSqH + 30.0 * humanOut);
+//        double MAX_PROGRESS_DIFF = 7.0 * (29.0 + 30.0); // 413
+//        double progressNorm = progressRaw / MAX_PROGRESS_DIFF; // roughly [-1..+1]
+//
+//        double progressScaled = progressNorm * 30.0;
+//        double OUT_WEIGHT = 50.0;
+//        double outDiff = (computerOut - humanOut) * OUT_WEIGHT;
+//        return (W_SAFETY * safetyDiff) + (W_PROGRESS * (progressScaled + outDiff));
 
 }
